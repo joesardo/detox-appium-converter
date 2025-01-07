@@ -9,7 +9,6 @@
   "dependencies": {
     "simple-git": "^3.0.0"
   },
-  "devDependencies": {},
   "author": "Joseph Sardo",
   "license": "ISC"
 }
