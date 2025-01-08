@@ -40,14 +40,12 @@ function processFiles(directoryPath) {
 // Convert Detox code to Appium
 function detoxToAppium(detoxCode) {
   const appiumCode = detoxCode
-        .replace(/await element\(by.id\('([^']+)'\)\)/g, "await driver.$('#$1')")
-        .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\)\.toBeVisible\(\);/g, "driver.$('#$1').isDisplayed()")
-        .replace(/await expect\(element\(by.id\('([^']+)'\)\).toHaveText\('([^']+)'\)/g, "const text = await driver.$('#$1').getText(); expect(text).toBe('$2');")
-        .replace(/await element\(by.label\('([^']+)'\)\)/g, "await driver.$('~$1')")
-        .replace(/await element\(by.text\('([^']+)'\)\)/g, "await driver.$('~$1')")
-        .replace(/await element\(by.type\('([^']+)'\)\)/g, "await driver.$('~$1')")
-        .replace(/await waitFor\(element\(by.id\('([^']+)'\)\).toBeVisible\(\)/g, "await driver.$('#$1').waitForDisplayed()")
-        .replace(/await element\(by.id\('([^']+)'\)\.tap\(\)/g, "await driver.$('#$1').click()");
+        .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)\.typeText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('#$1');\n element.setValue('$2');")
+        .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.typeText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('$2');")
+        .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)\.replaceText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('#$1'); element.setValue('$2');")
+        .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.replaceText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('$2');")
+        .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)\.clearText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('#$1'); element.setValue('');")
+        .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.clearText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('');")
 
     // Log the conversion process for debugging
     console.log('Converted Appium Code:\n', appiumCode);
