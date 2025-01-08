@@ -44,7 +44,7 @@ function detoxToAppium(detoxCode) {
     .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)/g, "driver.$('~$2')")
     .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.replaceText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
-    .replace(/\.clearText\(['"]([^'"]+)['"]\)/g, ".setValue('')")
+    .replace(/\.clearText\(\)/g, ".setValue('')")
 
     // Log the conversion process for debugging
     console.log('Converted Appium Code:\n', appiumCode);
