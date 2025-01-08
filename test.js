@@ -40,14 +40,9 @@ function processFiles(directoryPath) {
 // Convert Detox code to Appium
 function detoxToAppium(detoxCode) {
   const appiumCode = detoxCode
-    .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)/g, "driver.$('#$1');")
-    .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)/g, "driver.$('~$1');")
-    .replace(/\.typeText\(['"]([^'"]+)['"]\);/g, "\n setValue('$1');")
-    .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.typeText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('$2');")
-    .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)\.replaceText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('#$1'); element.setValue('$2');")
-    .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.replaceText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('$2');")
-    .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)\.clearText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('#$1'); element.setValue('');")
-    .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.clearText\(['"]([^'"]+)['"]\);/g, "const element = await driver.$('~$1'); element.setValue('');")
+    .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)/g, "driver.$('#$1')")
+    .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)/g, "driver.$('~$2')")
+    .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
 
     // Log the conversion process for debugging
     console.log('Converted Appium Code:\n', appiumCode);
