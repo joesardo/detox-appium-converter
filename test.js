@@ -45,9 +45,7 @@ function detoxToAppium(detoxCode) {
     .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.replaceText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.clearText\(\)/g, ".setValue('')")
-
-    // Log the conversion process for debugging
-    console.log('Converted Appium Code:\n', appiumCode);
+    .replace(/\.tap\(\);?/g, ".click()")
     
     return appiumCode;
 }
