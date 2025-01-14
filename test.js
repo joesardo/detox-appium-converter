@@ -54,7 +54,15 @@ function detoxToAppium(detoxCode) {
     .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.replaceText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.clearText\(\)/g, ".setValue('')")
-    .replace(/\.tap\(\);?/g, ".click()");
+    .replace(/\.tap\(\)/g, ".click()")
+    .replace(/\.toBeVisible\(\)/g, ".isDisplayed()")
+    .replace(/\.toExist\(\)/g, ".findElements(By.id('$1'))")
+    .replace(/\.toBeFocused\(\)/g, ".getAttribute('focused') === 'true'")
+    .replace(/\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, ".getText() === '$1'")
+    .replace(/\.toHaveLabel\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('label') === '$1'")
+    .replace(/\.toHaveId\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('id') === '$1'")
+    .replace(/\.toHaveValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('value') === '$1'")
+    .replace(/\.toHaveToggleValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('checked') === 'true'");
     
     return appiumCode;
 }
@@ -62,16 +70,24 @@ function detoxToAppium(detoxCode) {
 // Convert Appium code to Detox
 function appiumToDetox(appiumCode) {
   const detoxCode = appiumCode
-    .replace(/driver\.\\\$('#([^']+)')/g, "element(by.id('$1'))")
-    .replace(/driver\.\\\$('~([^']+)')/g, "element(by.$1('$2'))")
+    .replace(/driver\.\$('#([^']+)')/g, "element(by.id('$1'))")
+    .replace(/driver\.\$('~([^']+)')/g, "element(by.label('$1'))") // Adjust if needed for text/type
     .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".typeText('$1')")
     .replace(/\.setValue\(\s*\)/g, ".clearText()")
-    .replace(/\.click\(\);?/g, ".tap();");
+    .replace(/\.click\(\)/g, ".tap()")
+    .replace(/\.isDisplayed\(\)/g, ".toBeVisible()")
+    .replace(/\.findElements\(By\.id\(['"]([^'"]+)['"]\)\)/g, ".toExist()")
+    .replace(/\.getAttribute\('focused'\)\s*===\s*'true'/g, ".toBeFocused()")
+    .replace(/\.getText\(\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveText('$1')")
+    .replace(/\.getAttribute\('label'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveLabel('$1')")
+    .replace(/\.getAttribute\('id'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveId('$1')")
+    .replace(/\.getAttribute\('value'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveValue('$1')")
+    .replace(/\.getAttribute\('checked'\)\s*===\s*'true'/g, ".toHaveToggleValue('true')"); // Adjust based on toggle value context
   
   return detoxCode;
 }
 
 // Example usage
 const directoryPath = './e2e';
-const files = processFiles(directoryPath);
+const files = processFiles(directoryPath, appium);
 console.log(files);
