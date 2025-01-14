@@ -21,16 +21,25 @@ function getFilesInDirectory(directoryPath, fileArray = []) {
     return fileArray;
 }
 
-function processFiles(directoryPath) {
+function processFiles(directoryPath, conversionType) {
   const files = getFilesInDirectory(directoryPath);
   for (const file of files) {
       const fileContent = fs.readFileSync(file, 'utf8');
       console.log(fileContent);
       
-      // Process Detox -> Appium
-      console.log(`Converting Detox code in ${file}`);
-      const convertedContent = detoxToAppium(fileContent);
-      console.log(convertedContent);
+      if (conversionType === 'appium') {
+        // Process Detox -> Appium
+        console.log(`Converting code in ${file}`);
+        const convertedContent = detoxToAppium(fileContent);
+        console.log(convertedContent);
+      } else if (conversionType === 'detox') {
+        // Process Appium -> Detox
+        console.log(`Converting code in ${file}`);
+        const convertedContent = appiumToDetox(fileContent);
+        console.log(convertedContent);
+      } else {
+        console.warn('Please enter in either appium or detox as a parameter for processFiles().');
+      }
       
       // Write the converted content back to the file
       fs.writeFileSync(file, convertedContent, 'utf8');
@@ -45,28 +54,21 @@ function detoxToAppium(detoxCode) {
     .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.replaceText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
     .replace(/\.clearText\(\)/g, ".setValue('')")
-    .replace(/\.tap\(\);?/g, ".click()")
+    .replace(/\.tap\(\);?/g, ".click()");
     
     return appiumCode;
 }
 
 // Convert Appium code to Detox
 function appiumToDetox(appiumCode) {
-  // Convert Appium's driver.element().click() to Detox's element().tap()
-  appiumCode = appiumCode.replace(/await driver\.element\(\)\.click\(\);/g, "await element().tap();");
-
-  // Convert Appium's driver.element().sendKeys() to Detox's element().typeText()
-  appiumCode = appiumCode.replace(/await driver\.element\(\)\.sendKeys\('([^']+)'\);/g, "await element().typeText('$1');");
-
-  // Convert Appium's assertions to Detox's expect() assertions
-  appiumCode = appiumCode.replace(/await driver\.element\(\)\.isDisplayed\(\);/g, "expect(element()).toBeVisible();");
-  appiumCode = appiumCode.replace(/await driver\.element\(\)\.isEnabled\(\);/g, "expect(element()).toBeEnabled();");
-
-  // Convert Appium's before and after to Detox's beforeAll and afterAll
-  appiumCode = appiumCode.replace(/before\(.*\);/g, "beforeAll(async () => { await device.launchApp(); });");
-  appiumCode = appiumCode.replace(/after\(.*\);/g, "afterAll(async () => { await device.terminateApp(); });");
-
-  return appiumCode;
+  const detoxCode = appiumCode
+    .replace(/driver\.\\\$('#([^']+)')/g, "element(by.id('$1'))")
+    .replace(/driver\.\\\$('~([^']+)')/g, "element(by.$1('$2'))")
+    .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".typeText('$1')")
+    .replace(/\.setValue\(\s*\)/g, ".clearText()")
+    .replace(/\.click\(\);?/g, ".tap();");
+  
+  return detoxCode;
 }
 
 // Example usage
