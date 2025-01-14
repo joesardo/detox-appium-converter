@@ -48,6 +48,14 @@ function processFiles(directoryPath, conversionType) {
 // Convert Detox code to Appium
 function detoxToAppium(detoxCode) {
   const appiumCode = detoxCode
+    .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "expect(await driver.$('#$1').isDisplayed()).to.be.true")
+    .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "expect(await driver.$('~$2').isDisplayed()).to.be.true")
+    .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toExist\(\)/g, "expect(await driver.$('#$1').isDisplayed()).to.be.true")
+    .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toExist\(\)/g, "expect(await driver.$('~$2').isDisplayed()).to.be.true")
+    .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, "expect(await driver.$('#$1').getText()).to.equal('$2')")
+    .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, "expect(await driver.$('~$2').getText()).to.equal('$3')")
+    .replace(/waitFor\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "await driver.$('#$1').waitUntilDisplayed()")
+    .replace(/waitFor\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "await driver.$('~$2').waitUntilDisplayed()")
     .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)/g, "driver.$('#$1')")
     .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)/g, "driver.$('~$2')")
     .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
@@ -62,27 +70,36 @@ function detoxToAppium(detoxCode) {
     .replace(/\.toHaveId\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('id') === '$1'")
     .replace(/\.toHaveValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('value') === '$1'")
     .replace(/\.toHaveToggleValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('checked') === 'true'");
-    
-    return appiumCode;
+
+  return appiumCode;
 }
 
 // Convert Appium code to Detox
 function appiumToDetox(appiumCode) {
   const detoxCode = appiumCode
-    .replace(/driver\.\$('#([^']+)')/g, "element(by.id('$1'))")
-    .replace(/driver\.\$('~([^']+)')/g, "element(by.label('$1'))")
+    .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.text('$1'))).toBeVisible()")
+    .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.id('$1'))).toBeVisible()")
+    .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.label('$1'))).toExist()")
+    .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.id('$1'))).toExist()")
+    .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.getText\(\)\.to\.equal\(['"]([^'"]+)['"]\)/g, "expect(element(by.id('$1'))).toHaveText('$2')")
+    .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.getText\(\)\.to\.equal\(['"]([^'"]+)['"]\)/g, "expect(element(by.label('$1'))).toHaveText('$2')")
+    .replace(/await driver\.\$\(\'\#([^\'\)]+)\'\)\.waitUntilDisplayed\(\)/g, "waitFor(element(by.id('$1'))).toBeVisible()")
+    .replace(/await driver\.\$\(\'\~([^\'\)]+)\'\)\.waitUntilDisplayed\(\)/g, "waitFor(element(by.label('$1'))).toBeVisible()")
+    .replace(/driver\.\$\(\'\#([^\'\)]+)\'\)/g, "element(by.id('$1'))")
+    .replace(/driver\.\$\(\'\~([^\'\)]+)\'\)/g, "element(by.text('$1'))")
     .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".typeText('$1')")
-    .replace(/\.setValue\(\s*\)/g, ".clearText()")
+    .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".replaceText('$1')")
+    .replace(/\.setValue\(\s*''\s*\)/g, ".clearText()")
     .replace(/\.click\(\)/g, ".tap()")
     .replace(/\.isDisplayed\(\)/g, ".toBeVisible()")
     .replace(/\.findElements\(By\.id\(['"]([^'"]+)['"]\)\)/g, ".toExist()")
-    .replace(/\.getAttribute\('focused'\)\s*===\s*'true'/g, ".toBeFocused()")
-    .replace(/\.getText\(\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveText('$1')")
-    .replace(/\.getAttribute\('label'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveLabel('$1')")
-    .replace(/\.getAttribute\('id'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveId('$1')")
-    .replace(/\.getAttribute\('value'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveValue('$1')")
-    .replace(/\.getAttribute\('checked'\)\s*===\s*'true'/g, ".toHaveToggleValue('true')");
-  
+    .replace(/\.getAttribute\('focused'\) === 'true'/g, ".toBeFocused()")
+    .replace(/\.getText\(\) === ['"]([^'"]+)['"]/g, ".toHaveText('$1')")
+    .replace(/\.getAttribute\('label'\) === ['"]([^'"]+)['"]/g, ".toHaveLabel('$1')")
+    .replace(/\.getAttribute\('id'\) === ['"]([^'"]+)['"]/g, ".toHaveId('$1')")
+    .replace(/\.getAttribute\('value'\) === ['"]([^'"]+)['"]/g, ".toHaveValue('$1')")
+    .replace(/\.getAttribute\('checked'\) === 'true'/g, ".toHaveToggleValue('true')");
+
   return detoxCode;
 }
 

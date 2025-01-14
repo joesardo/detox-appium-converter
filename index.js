@@ -1,103 +1,107 @@
 const fs = require('fs');
 const path = require('path');
-const simpleGit = require('simple-git');
-const util = require('util');
-
-// Promisified version of fs.readFile and fs.writeFile for async operations
-const readFile = util.promisify(fs.readFile);
-const writeFile = util.promisify(fs.writeFile);
 
 class TestConverter {
-    constructor(repositoryPath) {
-        this.repositoryPath = repositoryPath;
-        this.git = simpleGit();
-    }
-
-    // Method to clone a repository (if URL is provided)
-    async cloneRepo() {
-        try {
-            await this.git.clone(this.repositoryPath, path.join(__dirname, 'temp-repo'));
-            console.log('Repository cloned to temp-repo');
-        } catch (error) {
-            console.error('Failed to clone repository:', error);
-        }
-    }
-
-    // Method to read all test files from the repo directory
-    async readTestFiles(directory = 'temp-repo') {
-        try {
-            const files = await this._getAllFiles(path.join(__dirname, directory));
-            return files.filter(file => file.endsWith('.js')); // Filter only JS files
-        } catch (error) {
-            console.error('Failed to read test files:', error);
-            return [];
-        }
-    }
-
-    // Recursively get all files in a directory
-    async _getAllFiles(dirPath, arrayOfFiles = []) {
-        const files = await fs.promises.readdir(dirPath);
-        for (const file of files) {
-            const filePath = path.join(dirPath, file);
-            const stat = await fs.promises.stat(filePath);
-            if (stat.isDirectory()) {
-                await this._getAllFiles(filePath, arrayOfFiles); // Recurse into subdirectory
-            } else {
-                arrayOfFiles.push(filePath);
-            }
-        }
-        return arrayOfFiles;
-    }
-
     // Convert Detox code to Appium
-    detoxToAppium(detoxCode) {
-        // Convert Detox's expect(element()).toBeVisible() to Appium's driver.element().isDisplayed()
-        detoxCode = detoxCode.replace(/expect\(element\(\)\)\.toBeVisible\(\);/g, "await driver.element().isDisplayed();");
+    async detoxToAppium(detoxCode) {
+        const appiumCode = detoxCode
+          .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "expect(await driver.$('#$1').isDisplayed()).to.be.true")
+          .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "expect(await driver.$('~$2').isDisplayed()).to.be.true")
+          .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toExist\(\)/g, "expect(await driver.$('#$1').isDisplayed()).to.be.true")
+          .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toExist\(\)/g, "expect(await driver.$('~$2').isDisplayed()).to.be.true")
+          .replace(/expect\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, "expect(await driver.$('#$1').getText()).to.equal('$2')")
+          .replace(/expect\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, "expect(await driver.$('~$2').getText()).to.equal('$3')")
+          .replace(/waitFor\(element\(by\.id\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "await driver.$('#$1').waitUntilDisplayed()")
+          .replace(/waitFor\(element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)\.toBeVisible\(\)/g, "await driver.$('~$2').waitUntilDisplayed()")
+          .replace(/element\(by\.id\(['"]([^'"]+)['"]\)\)/g, "driver.$('#$1')")
+          .replace(/element\(by\.(label|text|type)\(['"]([^'"]+)['"]\)\)/g, "driver.$('~$2')")
+          .replace(/\.typeText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
+          .replace(/\.replaceText\(['"]([^'"]+)['"]\)/g, ".setValue('$1')")
+          .replace(/\.clearText\(\)/g, ".setValue('')")
+          .replace(/\.tap\(\)/g, ".click()")
+          .replace(/\.toBeVisible\(\)/g, ".isDisplayed()")
+          .replace(/\.toExist\(\)/g, ".findElements(By.id('$1'))")
+          .replace(/\.toBeFocused\(\)/g, ".getAttribute('focused') === 'true'")
+          .replace(/\.toHaveText\(\s*['"]([^'"]+)['"]\s*\)/g, ".getText() === '$1'")
+          .replace(/\.toHaveLabel\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('label') === '$1'")
+          .replace(/\.toHaveId\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('id') === '$1'")
+          .replace(/\.toHaveValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('value') === '$1'")
+          .replace(/\.toHaveToggleValue\(\s*['"]([^'"]+)['"]\s*\)/g, ".getAttribute('checked') === 'true'");
+      
+        return appiumCode;
+      }
 
-        // Convert Detox's actions (tap, typeText) to Appium equivalent methods
-        detoxCode = detoxCode.replace(/await element\(\)\.tap\(\);/g, "await driver.element().click();");
-        detoxCode = detoxCode.replace(/await element\(\)\.typeText\('([^']+)'\);/g, "await driver.element().sendKeys('$1');");
-
-        // Convert Detox's assertions to Appium's assertions
-        detoxCode = detoxCode.replace(/expect\(element\(\)\)\.toBeVisible\(\);/g, "await driver.element().isDisplayed();");
-        detoxCode = detoxCode.replace(/expect\(element\(\)\)\.toBeEnabled\(\);/g, "await driver.element().isEnabled();");
-
-        // Convert Detox's beforeAll and afterAll to Appium's before and after
-        detoxCode = detoxCode.replace(/beforeAll\(.*\);/g, "before(async () => { await driver.init(); });");
-        detoxCode = detoxCode.replace(/afterAll\(.*\);/g, "after(async () => { await driver.quit(); });");
+    // Convert Appium code to Detox
+    async appiumToDetox(appiumCode) {
+      const detoxCode = appiumCode
+        .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.text('$1'))).toBeVisible()")
+        .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.id('$1'))).toBeVisible()")
+        .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.label('$1'))).toExist()")
+        .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.isDisplayed\(\)\.to\.be\.true\)/g, "expect(element(by.id('$1'))).toExist()")
+        .replace(/expect\(await driver\.\$\(\'\#([^\'\)]+)\'\)\.getText\(\)\.to\.equal\(['"]([^'"]+)['"]\)/g, "expect(element(by.id('$1'))).toHaveText('$2')")
+        .replace(/expect\(await driver\.\$\(\'\~([^\'\)]+)\'\)\.getText\(\)\.to\.equal\(['"]([^'"]+)['"]\)/g, "expect(element(by.label('$1'))).toHaveText('$2')")
+        .replace(/await driver\.\$\(\'\#([^\'\)]+)\'\)\.waitUntilDisplayed\(\)/g, "waitFor(element(by.id('$1'))).toBeVisible()")
+        .replace(/await driver\.\$\(\'\~([^\'\)]+)\'\)\.waitUntilDisplayed\(\)/g, "waitFor(element(by.label('$1'))).toBeVisible()")
+        .replace(/driver\.\$\(\'\#([^\'\)]+)\'\)/g, "element(by.id('$1'))")
+        .replace(/driver\.\$\(\'\~([^\'\)]+)\'\)/g, "element(by.text('$1'))")
+        .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".typeText('$1')")
+        .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".replaceText('$1')")
+        .replace(/\.setValue\(\s*''\s*\)/g, ".clearText()")
+        .replace(/\.click\(\)/g, ".tap()")
+        .replace(/\.isDisplayed\(\)/g, ".toBeVisible()")
+        .replace(/\.findElements\(By\.id\(['"]([^'"]+)['"]\)\)/g, ".toExist()")
+        .replace(/\.getAttribute\('focused'\) === 'true'/g, ".toBeFocused()")
+        .replace(/\.getText\(\) === ['"]([^'"]+)['"]/g, ".toHaveText('$1')")
+        .replace(/\.getAttribute\('label'\) === ['"]([^'"]+)['"]/g, ".toHaveLabel('$1')")
+        .replace(/\.getAttribute\('id'\) === ['"]([^'"]+)['"]/g, ".toHaveId('$1')")
+        .replace(/\.getAttribute\('value'\) === ['"]([^'"]+)['"]/g, ".toHaveValue('$1')")
+        .replace(/\.getAttribute\('checked'\) === 'true'/g, ".toHaveToggleValue('true')");
 
         return detoxCode;
     }
 
-    // Convert Appium code to Detox
-    appiumToDetox(appiumCode) {
-        // Convert Appium's driver.element().click() to Detox's element().tap()
-        appiumCode = appiumCode.replace(/await driver\.element\(\)\.click\(\);/g, "await element().tap();");
-
-        // Convert Appium's driver.element().sendKeys() to Detox's element().typeText()
-        appiumCode = appiumCode.replace(/await driver\.element\(\)\.sendKeys\('([^']+)'\);/g, "await element().typeText('$1');");
-
-        // Convert Appium's assertions to Detox's expect() assertions
-        appiumCode = appiumCode.replace(/await driver\.element\(\)\.isDisplayed\(\);/g, "expect(element()).toBeVisible();");
-        appiumCode = appiumCode.replace(/await driver\.element\(\)\.isEnabled\(\);/g, "expect(element()).toBeEnabled();");
-
-        // Convert Appium's before and after to Detox's beforeAll and afterAll
-        appiumCode = appiumCode.replace(/before\(.*\);/g, "beforeAll(async () => { await device.launchApp(); });");
-        appiumCode = appiumCode.replace(/after\(.*\);/g, "afterAll(async () => { await device.terminateApp(); });");
-
-        return appiumCode;
+    async getFilesInDirectory(directoryPath, fileArray = []) {
+        // Read all items in the directory
+        const items = fs.readdir(directoryPath);
+    
+        for (const item of items) {
+            const fullPath = path.join(directoryPath, item);
+            const stats = fs.stat(fullPath);
+    
+            // If the item is a directory, recursively get files
+            if (stats.isDirectory()) {
+                getFilesInDirectory(fullPath, fileArray);
+            } else {
+                // If it's a file, add it to the array
+                fileArray.push(fullPath);
+            }
+        }
+    
+        return fileArray;
     }
 
     // Process each file to convert based on its content
     async processFiles(directoryPath) {
         const files = getFilesInDirectory(directoryPath);
           for (const file of files) {
-              const fileContent = fs.readFileSync(file, 'utf8');
+              const fileContent = fs.readFile(file, 'utf8');
               console.log(fileContent);
               
-              console.log(`Converting Detox code in ${file}`);
-              const convertedContent = detoxToAppium(fileContent);
-              console.log(convertedContent);
+              if (conversionType === 'appium') {
+                // Process Detox -> Appium
+                console.log(`Converting Detox code in ${file}`);
+                const convertedContent = detoxToAppium(fileContent);
+                console.log(convertedContent);
+                fs.writeFile(file, convertedContent, 'utf8');
+              } else if (conversionType === 'detox') {
+                // Process Appium -> Detox
+                console.log(`Converting Appium code in ${file}`);
+                const convertedContent = appiumToDetox(fileContent);
+                console.log(convertedContent);
+                fs.writeFile(file, convertedContent, 'utf8');
+              } else {
+                console.warn('Please enter in either appium or detox as a parameter for processFiles().');
+              }
           }
     }
 }

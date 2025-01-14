@@ -1,14 +1,9 @@
 # Example Usage
 
-const TestConverter = require('test-converter');
+const directoryPath = './e2e';
+processFiles(directoryPath, 'appium');
 
-// Initialize with the repository path (local path or GitHub URL)
-const converter = new TestConverter('path_to_your_repo_or_github_url');
+# Notes
 
-// Clone the repository (if it's a URL)
-async function convertTests() {
-    await converter.cloneRepo();  // Clone repository (if needed)
-    await converter.processFiles();  // Process and convert all files
-}
-
-convertTests();
+- I'd recommend writing a small script using the template above to migrate your code.
+- Appium / WebDriverIO -> Detox code conversion is still a WIP.
