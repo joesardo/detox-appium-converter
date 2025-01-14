@@ -89,23 +89,16 @@ class TestConverter {
     }
 
     // Process each file to convert based on its content
-    async processFiles() {
-        const files = await this.readTestFiles();
-        for (const file of files) {
-            const fileContent = await readFile(file, 'utf8');
-            let convertedContent;
-            if (fileContent.includes('expect(element()')) {
-                // Assume Detox code
-                console.log(`Converting Detox code in ${file}`);
-                convertedContent = this.detoxToAppium(fileContent);
-            } else {
-                // Assume Appium code
-                console.log(`Converting Appium code in ${file}`);
-                convertedContent = this.appiumToDetox(fileContent);
-            }
-            // Write the converted content back to the file
-            await writeFile(file, convertedContent, 'utf8');
-        }
+    async processFiles(directoryPath) {
+        const files = getFilesInDirectory(directoryPath);
+          for (const file of files) {
+              const fileContent = fs.readFileSync(file, 'utf8');
+              console.log(fileContent);
+              
+              console.log(`Converting Detox code in ${file}`);
+              const convertedContent = detoxToAppium(fileContent);
+              console.log(convertedContent);
+          }
     }
 }
 

@@ -29,20 +29,19 @@ function processFiles(directoryPath, conversionType) {
       
       if (conversionType === 'appium') {
         // Process Detox -> Appium
-        console.log(`Converting code in ${file}`);
+        console.log(`Converting Detox code in ${file}`);
         const convertedContent = detoxToAppium(fileContent);
         console.log(convertedContent);
+        fs.writeFileSync(file, convertedContent, 'utf8');
       } else if (conversionType === 'detox') {
         // Process Appium -> Detox
-        console.log(`Converting code in ${file}`);
+        console.log(`Converting Appium code in ${file}`);
         const convertedContent = appiumToDetox(fileContent);
         console.log(convertedContent);
+        fs.writeFileSync(file, convertedContent, 'utf8');
       } else {
         console.warn('Please enter in either appium or detox as a parameter for processFiles().');
       }
-      
-      // Write the converted content back to the file
-      fs.writeFileSync(file, convertedContent, 'utf8');
   }
 }
 
@@ -71,7 +70,7 @@ function detoxToAppium(detoxCode) {
 function appiumToDetox(appiumCode) {
   const detoxCode = appiumCode
     .replace(/driver\.\$('#([^']+)')/g, "element(by.id('$1'))")
-    .replace(/driver\.\$('~([^']+)')/g, "element(by.label('$1'))") // Adjust if needed for text/type
+    .replace(/driver\.\$('~([^']+)')/g, "element(by.label('$1'))")
     .replace(/\.setValue\(['"]([^'"]+)['"]\)/g, ".typeText('$1')")
     .replace(/\.setValue\(\s*\)/g, ".clearText()")
     .replace(/\.click\(\)/g, ".tap()")
@@ -82,12 +81,11 @@ function appiumToDetox(appiumCode) {
     .replace(/\.getAttribute\('label'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveLabel('$1')")
     .replace(/\.getAttribute\('id'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveId('$1')")
     .replace(/\.getAttribute\('value'\)\s*===\s*['"]([^'"]+)['"]/g, ".toHaveValue('$1')")
-    .replace(/\.getAttribute\('checked'\)\s*===\s*'true'/g, ".toHaveToggleValue('true')"); // Adjust based on toggle value context
+    .replace(/\.getAttribute\('checked'\)\s*===\s*'true'/g, ".toHaveToggleValue('true')");
   
   return detoxCode;
 }
 
 // Example usage
 const directoryPath = './e2e';
-const files = processFiles(directoryPath, appium);
-console.log(files);
+const files = processFiles(directoryPath, 'appium');
