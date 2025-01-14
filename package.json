@@ -1,7 +1,7 @@
 {
   "name": "detox-appium-converter",
-  "version": "1.0.0",
-  "description": "A tool to convert Detox tests to Appium and vice versa.",
+  "version": "1.0.1",
+  "description": "A tool to convert Detox tests to Appium / WebDriverIO and vice versa.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
